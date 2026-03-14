@@ -1,0 +1,8 @@
+{
+  "name": "SOVEREIGN",
+  "description": "The Affiliate Operating System & The Labyrinth. A unified dashboard aggregating all affiliate networks with gamified progression and AI-driven smart routing.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

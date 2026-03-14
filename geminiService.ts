@@ -1,14 +1,12 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// FIX: Strictly follow initialization guideline: Always use const ai = new GoogleGenAI({apiKey: process.env.GEMINI_API_KEY});
-const getAI = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 export const getSmartRoutingAdvice = async (productUrl: string) => {
-  const ai = getAI();
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
+      tools: [{ googleSearch: {} }],
       contents: `Analyze this product URL and provide 3 affiliate paths: Long Road, The Alley, The Bridge. URL: ${productUrl}`,
       config: {
         responseMimeType: 'application/json',
@@ -39,10 +37,11 @@ export const getSmartRoutingAdvice = async (productUrl: string) => {
 };
 
 export const getMinotaurChallengeLore = async (niche: string, difficulty: number) => {
-  const ai = getAI();
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
+      tools: [{ googleSearch: {} }],
       contents: `Generate a cryptic challenge question for an affiliate marketer in the ${niche} niche. Difficulty: ${difficulty}/10. The user must solve this to defeat a Minotaur in the Sovereign Labyrinth. Provide the question and the correct answer.`,
       config: {
         responseMimeType: 'application/json',
@@ -65,11 +64,12 @@ export const getMinotaurChallengeLore = async (niche: string, difficulty: number
 };
 
 export const chatWithSovereign = async (history: { role: string; text: string }[]) => {
-  const ai = getAI();
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   const chat = ai.chats.create({
     model: 'gemini-3-pro-preview',
     config: {
       systemInstruction: 'You are the Maze Architect of Sovereign, a mystical and powerful AI assistant for affiliate marketers. Your tone is authoritative, cryptic but helpful, using metaphors of the labyrinth, gold, and the crown.',
+      thinkingBudget: 32768,
     }
   });
 
@@ -87,7 +87,7 @@ export const generateMarketVideo = async (prompt: string) => {
   }
 
   // FIX: Create a new GoogleGenAI instance right before making an API call for Veo models
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   
   let operation = await ai.models.generateVideos({
     model: 'veo-3.1-fast-generate-preview',
@@ -106,6 +106,6 @@ export const generateMarketVideo = async (prompt: string) => {
 
   const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
   // FIX: Append API key when fetching from download link as per guidelines
-  const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+  const response = await fetch(`${downloadLink}&key=${process.env.GEMINI_API_KEY}`);
   return URL.createObjectURL(await response.blob());
 };

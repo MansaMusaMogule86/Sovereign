@@ -44,7 +44,8 @@ const App: React.FC = () => {
 
   const handleAcceptChallenge = (id: string) => {
     setUser(prev => ({ ...prev, activeChallenges: [...prev.activeChallenges, id] }));
-    setChallenges(prev => prev.map(c => c.id === id ? { ...c, status: 'active' } : c));
+    // Set expiration to 5 minutes from now for demo purposes
+    setChallenges(prev => prev.map(c => c.id === id ? { ...c, status: 'active', expiresAt: Date.now() + 300000 } : c));
   };
 
   const handleCreateChallenge = (newChallenge: Omit<MinotaurChallenge, 'id' | 'status'>) => {
@@ -54,6 +55,18 @@ const App: React.FC = () => {
       status: 'available'
     };
     setChallenges(prev => [challenge, ...prev]);
+  };
+
+  const handleFailChallenge = (id: string) => {
+    const challenge = challenges.find(c => c.id === id);
+    if (challenge) {
+      setUser(prev => ({
+        ...prev,
+        authorityScore: Math.max(0, prev.authorityScore - 2),
+        activeChallenges: prev.activeChallenges.filter(cid => cid !== id)
+      }));
+      setChallenges(prev => prev.map(c => c.id === id ? { ...c, status: 'failed' } : c));
+    }
   };
 
   const handleCompleteChallenge = (id: string) => {
@@ -86,7 +99,14 @@ const App: React.FC = () => {
                 ) : <Navigate to="/" />
               } />
               <Route path="/dashboard" element={
-                isAuthenticated && user.niche ? <LabyrinthDashboard user={user} challenges={challenges.filter(c => user.activeChallenges.includes(c.id))} onComplete={handleCompleteChallenge} /> : <Navigate to="/" />
+                isAuthenticated && user.niche ? (
+                  <LabyrinthDashboard 
+                    user={user} 
+                    challenges={challenges.filter(c => user.activeChallenges.includes(c.id))} 
+                    onComplete={handleCompleteChallenge}
+                    onFail={handleFailChallenge}
+                  />
+                ) : <Navigate to="/" />
               } />
               <Route path="/alchemist" element={
                 isAuthenticated && user.niche ? <AlchemistPage user={user} /> : <Navigate to="/" />

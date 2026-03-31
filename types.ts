@@ -31,6 +31,7 @@ export interface MinotaurChallenge {
   rewardAuthority: number;
   task: string;
   status: 'available' | 'active' | 'completed' | 'failed';
+  expiresAt?: number; // Timestamp in ms
 }
 
 export interface UserProgress {

@@ -8,7 +8,75 @@ interface LabyrinthDashboardProps {
   user: UserProgress;
   challenges: MinotaurChallenge[];
   onComplete: (id: string) => void;
+  onFail: (id: string) => void;
 }
+
+const ChallengeTimer: React.FC<{ 
+  challenge: MinotaurChallenge; 
+  onFail: (id: string) => void;
+  playSound: (freq: number, type?: OscillatorType, duration?: number, volume?: number) => void;
+  triggerHaptic: (pattern: number | number[]) => void;
+}> = ({ challenge, onFail, playSound, triggerHaptic }) => {
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const initialTimeRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!challenge.expiresAt) return;
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const diff = Math.max(0, Math.floor((challenge.expiresAt! - now) / 1000));
+      
+      if (initialTimeRef.current === null) {
+        initialTimeRef.current = diff;
+      }
+      
+      setTimeLeft(diff);
+
+      if (diff === 0) {
+        playSound(100, 'sawtooth', 0.8, 0.3);
+        triggerHaptic([400, 100, 400]);
+        onFail(challenge.id);
+      } else if (diff <= 10) {
+        // Warning beeps for last 10 seconds
+        playSound(440, 'sine', 0.05, 0.05);
+        triggerHaptic(30);
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [challenge.expiresAt, challenge.id, onFail, playSound, triggerHaptic]);
+
+  if (!challenge.expiresAt) return null;
+
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  const progress = initialTimeRef.current ? (timeLeft / initialTimeRef.current) * 100 : 100;
+
+  return (
+    <div className={`mb-4 flex items-center justify-between bg-black/60 p-3 border-l-4 transition-colors duration-500 ${timeLeft < 30 ? 'border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.2)]' : 'border-[#FFD700]/50'}`}>
+      <div className="flex flex-col flex-1 mr-4">
+        <div className="flex justify-between items-center mb-1.5">
+          <span className="text-[8px] text-gray-500 uppercase tracking-widest font-black">Time Remaining</span>
+          <span className="text-[8px] text-gray-600 font-mono">{Math.round(progress)}%</span>
+        </div>
+        <div className="w-full h-1 bg-gray-900 rounded-full overflow-hidden">
+          <div 
+            className={`h-full transition-all duration-1000 ease-linear ${timeLeft < 30 ? 'bg-red-600 animate-pulse' : 'bg-[#FFD700]'}`}
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
+      </div>
+      <div className="text-right">
+        <span className={`text-xl font-black font-cinzel tracking-tighter ${timeLeft < 30 ? 'text-red-600 animate-pulse' : 'text-[#FFD700]'}`}>
+          {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 const data = [
   { name: 'Mon', value: 400 },
@@ -20,7 +88,7 @@ const data = [
   { name: 'Sun', value: 349 },
 ];
 
-const LabyrinthDashboard: React.FC<LabyrinthDashboardProps> = ({ user, challenges, onComplete }) => {
+const LabyrinthDashboard: React.FC<LabyrinthDashboardProps> = ({ user, challenges, onComplete, onFail }) => {
   const [minotaurPos, setMinotaurPos] = useState({ x: 20, y: 80 });
   const [userPos, setUserPos] = useState({ x: 50, y: 50 });
   const [distance, setDistance] = useState(100);
@@ -427,6 +495,12 @@ const LabyrinthDashboard: React.FC<LabyrinthDashboardProps> = ({ user, challenge
                        <span className="text-[10px] text-gray-500 font-cinzel">Lv.{c.difficulty}</span>
                     </div>
                     <p className="text-xs text-gray-300 leading-relaxed mb-4">{c.task}</p>
+                    <ChallengeTimer 
+                      challenge={c} 
+                      onFail={onFail} 
+                      playSound={playSound}
+                      triggerHaptic={triggerHaptic}
+                    />
                     <div className="flex items-center justify-between">
                        <div className="flex flex-wrap gap-1">
                           <span className="text-[8px] px-2 py-0.5 bg-[#FFD700]/10 text-[#FFD700] rounded-full border border-[#FFD700]/20">+{c.rewardGold} GOLD</span>
